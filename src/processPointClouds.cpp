@@ -28,16 +28,48 @@ typename pcl::PointCloud<PointT>::Ptr ProcessPointClouds<PointT>::FilterCloud(ty
     auto startTime = std::chrono::steady_clock::now();
 
     // TODO:: Fill in the function to do voxel grid point reduction and region based filtering
+    typename pcl::PointCloud<PointT>::Ptr filteredCloud(new pcl::PointCloud<PointT>);
+    typename pcl::PointCloud<PointT>::Ptr cloudRegion(new pcl::PointCloud<PointT>);
 
-//    VoxelGrid grid();
-//    grid.setLeafSize();
+
+    pcl::VoxelGrid<PointT> filter;
+    filter.setInputCloud(cloud);
+    filter.setLeafSize(filterRes,filterRes,filterRes);
+    filter.filter(*filteredCloud);
+
+    pcl::CropBox<PointT> region(true);
+    region.setMin(minPoint);
+    region.setMin(maxPoint);
+    region.setInputCloud(filteredCloud);
+    region.filter(*cloudRegion);
+    std::cout<<"input cloud size = "<<cloud->points.size()<<std::endl;
+    std::cout<<"filtered cloud size = "<<filteredCloud->points.size()<<std::endl;
+    std::cout<<"region cloud size = "<<cloudRegion->points.size()<<std::endl;
+    // previous filter isn't working as it should , so another option :
+    std::vector<int> indices;
+    region.filter(indices);
+    std::cout<<"indices size = "<<indices.size()<<std::endl;
+    if (cloudRegion->points.size() == 0){
+        pcl::ExtractIndices<PointT> extract;
+        pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
+        for (int i =0 ; i<indices.size();i++)
+            inliers->indices.push_back(indices[i]);
+        extract.setInputCloud(filteredCloud);
+        extract.setIndices(inliers);
+        extract.setNegative(false);
+        extract.filter(*cloudRegion);
+    }
+    std::cout<<"region cloud size = "<<cloudRegion->points.size()<<std::endl;
+
+
+
 
     auto endTime = std::chrono::steady_clock::now();
     auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
     std::cout << "filtering took " << elapsedTime.count() << " milliseconds" << std::endl;
 
-    return cloud;
-
+//    return filteredCloud;
+    return cloudRegion;
 }
 
 

@@ -42,7 +42,7 @@ void simpleHighway(pcl::visualization::PCLVisualizer::Ptr& viewer)
     // ----------------------------------------------------
     
     // RENDER OPTIONS
-    bool renderScene = false;
+    bool renderScene = true;
     std::vector<Car> cars = initHighway(renderScene, viewer);
     
     // TODO:: Create lidar sensor 
@@ -69,8 +69,11 @@ void simpleHighway(pcl::visualization::PCLVisualizer::Ptr& viewer)
                 it!=clusters.end() ; it++){
          
         renderPointCloud(viewer , (*it) , std::to_string(i), c[i]);
+        Box box = pointProcessor->BoundingBox((*it));
+        renderBox(viewer,box,i,c[i]);
         i++;
     }
+
 
 
 }
@@ -99,6 +102,18 @@ void initCamera(CameraAngle setAngle, pcl::visualization::PCLVisualizer::Ptr& vi
         viewer->addCoordinateSystem (1.0);
 }
 
+void cityBlock (pcl::visualization::PCLVisualizer::Ptr viewer) {
+    ProcessPointClouds<pcl::PointXYZI> * pointProcessor = new ProcessPointClouds<pcl::PointXYZI>();
+    pcl::PointCloud<pcl::PointXYZI>::Ptr realCloud = pointProcessor->loadPcd("../src/sensors/data/pcd/data_1/0000000000.pcd");
+//    renderPointCloud(viewer,realCloud,"inputCloud");
+    pcl::PointCloud<pcl::PointXYZI>::Ptr regionCloud = pointProcessor->FilterCloud(
+        realCloud,0.2 , Eigen::Vector4f (-50,-50,-3,1.0) , Eigen::Vector4f (50,50,3,1.0)
+    );
+    
+    renderPointCloud(viewer,regionCloud,"regionCloud");
+
+}
+
 
 int main (int argc, char** argv)
 {
@@ -107,7 +122,9 @@ int main (int argc, char** argv)
     pcl::visualization::PCLVisualizer::Ptr viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
     CameraAngle setAngle = XY;
     initCamera(setAngle, viewer);
-    simpleHighway(viewer);
+//    simpleHighway(viewer);
+    cityBlock(viewer);
+
 
     while (!viewer->wasStopped ())
     {
