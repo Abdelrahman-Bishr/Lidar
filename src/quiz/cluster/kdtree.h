@@ -14,7 +14,9 @@ struct Node
 
 	Node(std::vector<float> arr, int setId)
 	:	point(arr), id(setId), left(NULL), right(NULL)
-	{}
+	{
+//		std::cout<<"new node id = "<<id<<std::endl;
+	}
 };
 
 struct KdTree
@@ -30,6 +32,7 @@ struct KdTree
 		// TODO: Fill in this function to insert a new point into the tree
 		// the function should create a new node and place correctly with in the root
 		if (root == nullptr){
+//			std::cout<<"creating root node\n";
 			root = new Node(point,id);
 			return;
 		}
@@ -37,6 +40,8 @@ struct KdTree
 		Node * temp = root;
 		Node * newNode = new Node(point,id);
 		int dims = point.size();
+		if (dims>=4)
+			dims = 3;
 		int depth = 0;
 		while(temp != nullptr){
 			depth%=dims;
@@ -66,6 +71,8 @@ struct KdTree
 		std::vector<int> ids;
 /***************************************************************************************************/
 		int dims = target.size();
+		if (dims>=4)
+			dims = 3;
 
 		Node * temp = root ;
 		search_subtree(temp,target,distanceTol,ids,0);
@@ -86,7 +93,10 @@ struct KdTree
 		if (inRange){
 			ids.push_back(temp->id);
 		}
-		depth%=target.size();
+		int dims = target.size(); 
+		if (dims>=4)
+			dims = 3;
+		depth%=(dims);
 		//check whether point in range of points from both branches
 		float levelD = abs( target[depth] - temp->point[depth] );
 		if (levelD < distanceTol){
@@ -105,12 +115,23 @@ struct KdTree
 
 
 	bool check_in_range(std::vector<float> target , std::vector<float> checkNodePoint,float distanceTol){
-		int dims = target.size();
+		int dims = (target.size());
+		if (dims>=4)
+			dims = 3;
+		float dist=0;
 		// loop on all dimensions of a point to check proximity
 		for (int i =0; i <dims ; i++){
-			if ( abs( target[i]-checkNodePoint[i] ) > distanceTol )
-				return false;
+			// for euclidean distance
+			dist += (target[i]-checkNodePoint[i])*(target[i]-checkNodePoint[i]);
+			// for distance tolerance per single axis
+//			if ( abs( target[i]-checkNodePoint[i] ) > distanceTol )
+//				return false;
 		}
+		// for euclidean distance
+		dist = sqrt(dist);
+		if (dist>distanceTol)
+			return false;
+
 		return true;
 	}
 	

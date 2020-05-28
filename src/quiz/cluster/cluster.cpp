@@ -10,6 +10,7 @@
 // Arguments:
 // window is the region to draw box around
 // increase zoom to see more of the area
+
 pcl::visualization::PCLVisualizer::Ptr initScene(Box window, int zoom)
 {
 	pcl::visualization::PCLVisualizer::Ptr viewer(new pcl::visualization::PCLVisualizer ("2D Viewer"));
@@ -119,6 +120,21 @@ std::vector<std::vector<int>> euclideanCluster(const std::vector<std::vector<flo
 	return clusters;
 }
 
+std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> Cluster (std::vector<std::vector<int> > clusters,pcl::PointCloud<pcl::PointXYZ>::Ptr inputCloud){
+	// vectorize clusters
+  	int clusterId = 0;
+	std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> clustersClouds;
+  	for(std::vector<int> cluster : clusters)
+  	{
+  		pcl::PointCloud<pcl::PointXYZ>::Ptr clusterCloud(new pcl::PointCloud<pcl::PointXYZ>());
+  		for(int indice: cluster)
+  			clusterCloud->points.push_back(inputCloud->points[indice]);
+		clustersClouds.push_back(clusterCloud);
+		++clusterId;
+  	}
+	return clustersClouds;
+}
+
 
 int main ()
 {
@@ -155,26 +171,18 @@ int main ()
   	// Time segmentation process
   	auto startTime = std::chrono::steady_clock::now();
   	//
-  	std::vector<std::vector<int>> clusters = euclideanCluster(points, tree, 3.0);
+  	std::vector<std::vector<int> > clusters = euclideanCluster(points, tree, 3.0);
   	//
   	auto endTime = std::chrono::steady_clock::now();
   	auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
   	std::cout << "clustering found " << clusters.size() << " and took " << elapsedTime.count() << " milliseconds" << std::endl;
 
-  	// Render clusters
-  	int clusterId = 0;
-	std::vector<Color> colors = {Color(1,0,0), Color(0,1,0), Color(0,0,1)};
-  	for(std::vector<int> cluster : clusters)
-  	{
-  		pcl::PointCloud<pcl::PointXYZ>::Ptr clusterCloud(new pcl::PointCloud<pcl::PointXYZ>());
-  		for(int indice: cluster)
-  			clusterCloud->points.push_back(pcl::PointXYZ(points[indice][0],points[indice][1],0));
-  		renderPointCloud(viewer, clusterCloud,"cluster"+std::to_string(clusterId),colors[clusterId%3]);
-  		++clusterId;
-  	}
-  	if(clusters.size()==0)
-  		renderPointCloud(viewer,cloud,"data");
-	
+	// Clusters: indices to different point clouds 	
+	std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr > clustersClouds (Cluster(clusters,cloud));
+	Color colors[6] = {Color(1,0,0),Color(0,1,0),Color(0,0,1),Color(1,1,0),Color(0,1,1),Color(1,0,1)};
+	for (int i=0;i<clustersClouds.size();i++){
+		renderPointCloud(viewer,clustersClouds[i],std::to_string(i),colors[i]);
+	}
   	while (!viewer->wasStopped ())
   	{
   	  viewer->spinOnce ();
